@@ -34,7 +34,7 @@ import {
   ChartLegendContent,
   type ChartConfig,
 } from "@/ui/chart";
-import { interpolateString } from "../interpolation";
+import { getValueFormatter } from "./chart-utils";
 import type {
   BarChartWire,
   LineChartWire,
@@ -46,16 +46,7 @@ import type {
 } from "@/schemas/chart";
 
 export { PrefabSparkline } from "./sparkline";
-
-function getValueFormatter(format?: string) {
-  if (!format || format === "auto") {
-    return undefined;
-  }
-  return (value: unknown) => {
-    const formatted = interpolateString(`{{ _v | ${format} }}`, { _v: value });
-    return formatted == null ? "" : String(formatted);
-  };
-}
+export { PrefabWaterfallChart } from "./waterfall-chart";
 
 // Auto-assign chart CSS variable colors to series by index
 const CHART_COLORS = [

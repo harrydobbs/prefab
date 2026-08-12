@@ -1,0 +1,218 @@
+/**
+ * WaterfallChart — floating bars showing sequential increases/decreases
+ * building to a total, with optional dashed "bridge" connector lines.
+ */
+
+import {
+  Bar,
+  ComposedChart,
+  Line,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+} from "recharts";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from "@/ui/chart";
+import { getValueFormatter } from "./chart-utils";
+import type { WaterfallChartWire } from "@/schemas/chart";
+
+type WaterfallCategory = "increase" | "decrease" | "total";
+
+const WATERFALL_CATEGORY_LABEL: Record<WaterfallCategory, string> = {
+  increase: "Increase",
+  decrease: "Decrease",
+  total: "Total",
+};
+
+interface WaterfallRow extends Record<string, unknown> {
+  __base: number;
+  __value: number;
+  __end: number;
+  __category: WaterfallCategory;
+}
+
+// Computes each bar's floating base/height from a running total. Total rows
+// reset the running total instead of stacking on the previous bar.
+function buildWaterfallRows(
+  data: Record<string, unknown>[],
+  dataKey: string,
+  totalKey: string | undefined,
+): WaterfallRow[] {
+  let running = 0;
+  return data.map((row) => {
+    const isTotal = totalKey ? Boolean(row[totalKey]) : false;
+    const raw = Number(row[dataKey] ?? 0);
+    const start = isTotal ? 0 : running;
+    const end = isTotal ? raw : running + raw;
+    running = end;
+    return {
+      ...row,
+      __base: Math.min(start, end),
+      __value: Math.abs(end - start),
+      __end: end,
+      __category: isTotal ? "total" : raw >= 0 ? "increase" : "decrease",
+    };
+  });
+}
+
+export function PrefabWaterfallChart({
+  data = [],
+  dataKey,
+  nameKey,
+  totalKey,
+  height = 300,
+  increaseColor,
+  decreaseColor,
+  totalColor,
+  barRadius = 4,
+  showConnectors = false,
+  showLegend = false,
+  showTooltip = true,
+  animate = true,
+  showGrid = true,
+  showYAxis = true,
+  valueFormat = "auto",
+  className,
+}: WaterfallChartWire & { className?: string }) {
+  if (typeof data === "string") return null;
+
+  const rows = buildWaterfallRows(data, dataKey, totalKey);
+  const colors: Record<WaterfallCategory, string> = {
+    increase: increaseColor ?? "var(--color-success)",
+    decrease: decreaseColor ?? "var(--color-destructive)",
+    total: totalColor ?? "var(--color-info)",
+  };
+  const categoriesPresent = Array.from(new Set(rows.map((r) => r.__category)));
+
+  const config: ChartConfig = {};
+  for (const cat of categoriesPresent) {
+    config[cat] = { label: WATERFALL_CATEGORY_LABEL[cat], color: colors[cat] };
+  }
+
+  const valueFormatter = getValueFormatter(valueFormat);
+
+  return (
+    <div className={className}>
+      <ChartContainer
+        config={config}
+        style={{
+          height: showLegend ? height - 36 : height,
+          aspectRatio: "auto",
+        }}
+      >
+        <ComposedChart data={rows}>
+          {showGrid && <CartesianGrid vertical={false} />}
+          <XAxis
+            dataKey={nameKey}
+            tickLine={false}
+            axisLine={false}
+            tickMargin={8}
+          />
+          {showYAxis && (
+            <YAxis
+              tickLine={false}
+              axisLine={false}
+              tickMargin={8}
+              tickFormatter={valueFormatter}
+            />
+          )}
+          {showTooltip && (
+            <ChartTooltip
+              content={
+                <ChartTooltipContent
+                  hideIndicator
+                  formatter={(_value, _name, item) => {
+                    const row = item.payload as WaterfallRow;
+                    const isTotal = row.__category === "total";
+                    const delta = isTotal ? row.__end : Number(row[dataKey]);
+                    const sign = row.__category === "increase" ? "+" : "";
+                    const display = valueFormatter
+                      ? valueFormatter(delta)
+                      : delta.toLocaleString();
+                    return (
+                      <div className="flex w-full flex-1 items-center justify-between gap-3">
+                        <span className="text-muted-foreground">
+                          {WATERFALL_CATEGORY_LABEL[row.__category]}
+                        </span>
+                        <span className="font-mono font-medium tabular-nums text-foreground">
+                          {sign}
+                          {display}
+                        </span>
+                      </div>
+                    );
+                  }}
+                />
+              }
+            />
+          )}
+          <Bar
+            dataKey="__base"
+            stackId="wf"
+            fill="transparent"
+            isAnimationActive={false}
+            legendType="none"
+            tooltipType="none"
+          />
+          <Bar
+            dataKey="__value"
+            stackId="wf"
+            radius={barRadius}
+            isAnimationActive={animate}
+          >
+            {rows.map((row, i) => (
+              <Cell key={i} fill={colors[row.__category]} />
+            ))}
+          </Bar>
+          {showConnectors && (
+            <Line
+              dataKey="__end"
+              type="stepAfter"
+              stroke="var(--color-muted-foreground)"
+              strokeWidth={1.5}
+              strokeDasharray="4 4"
+              dot={false}
+              isAnimationActive={animate}
+              legendType="none"
+              tooltipType="none"
+            />
+          )}
+        </ComposedChart>
+      </ChartContainer>
+      {showLegend && (
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            justifyContent: "center",
+            gap: "12px",
+            paddingTop: "8px",
+            fontSize: "12px",
+          }}
+        >
+          {categoriesPresent.map((cat) => (
+            <div
+              key={cat}
+              style={{ display: "flex", alignItems: "center", gap: "6px" }}
+            >
+              <div
+                style={{
+                  width: "8px",
+                  height: "8px",
+                  borderRadius: "2px",
+                  backgroundColor: colors[cat],
+                  flexShrink: 0,
+                }}
+              />
+              {WATERFALL_CATEGORY_LABEL[cat]}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
