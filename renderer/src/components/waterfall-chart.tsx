@@ -18,8 +18,18 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/ui/chart";
-import { getValueFormatter } from "./chart-utils";
+import { interpolateString } from "../interpolation";
 import type { WaterfallChartWire } from "@/schemas/chart";
+
+function getValueFormatter(format?: string) {
+  if (!format || format === "auto") {
+    return undefined;
+  }
+  return (value: unknown) => {
+    const formatted = interpolateString(`{{ _v | ${format} }}`, { _v: value });
+    return formatted == null ? "" : String(formatted);
+  };
+}
 
 type WaterfallCategory = "increase" | "decrease" | "total";
 
