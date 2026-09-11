@@ -110,13 +110,7 @@ export function PrefabWaterfallChart({
 
   return (
     <div className={className}>
-      <ChartContainer
-        config={config}
-        style={{
-          height: showLegend ? height - 36 : height,
-          aspectRatio: "auto",
-        }}
-      >
+      <ChartContainer config={config} style={{ height, aspectRatio: "auto" }}>
         <ComposedChart data={rows}>
           {showGrid && <CartesianGrid vertical={false} />}
           <XAxis
