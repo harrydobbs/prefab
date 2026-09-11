@@ -14,6 +14,8 @@ import {
 } from "recharts";
 import {
   ChartContainer,
+  ChartLegend,
+  ChartLegendContent,
   ChartTooltip,
   ChartTooltipContent,
   type ChartConfig,
@@ -80,8 +82,8 @@ export function PrefabWaterfallChart({
   decreaseColor,
   totalColor,
   barRadius = 4,
-  showConnectors = false,
-  showLegend = false,
+  showConnectors = true,
+  showLegend = true,
   showTooltip = true,
   animate = true,
   showGrid = true,
@@ -160,6 +162,30 @@ export function PrefabWaterfallChart({
               }
             />
           )}
+          {showLegend && (
+            <ChartLegend
+              content={<ChartLegendContent />}
+              payload={categoriesPresent.map((cat) => ({
+                value: cat,
+                dataKey: cat,
+                color: colors[cat],
+                type: "square",
+              }))}
+            />
+          )}
+          {showConnectors && (
+            <Line
+              dataKey="__end"
+              type="stepAfter"
+              stroke="var(--color-muted-foreground)"
+              strokeWidth={1.5}
+              strokeDasharray="4 4"
+              dot={false}
+              isAnimationActive={animate}
+              legendType="none"
+              tooltipType="none"
+            />
+          )}
           <Bar
             dataKey="__base"
             stackId="wf"
@@ -178,51 +204,8 @@ export function PrefabWaterfallChart({
               <Cell key={i} fill={colors[row.__category]} />
             ))}
           </Bar>
-          {showConnectors && (
-            <Line
-              dataKey="__end"
-              type="stepAfter"
-              stroke="var(--color-muted-foreground)"
-              strokeWidth={1.5}
-              strokeDasharray="4 4"
-              dot={false}
-              isAnimationActive={animate}
-              legendType="none"
-              tooltipType="none"
-            />
-          )}
         </ComposedChart>
       </ChartContainer>
-      {showLegend && (
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            justifyContent: "center",
-            gap: "12px",
-            paddingTop: "8px",
-            fontSize: "12px",
-          }}
-        >
-          {categoriesPresent.map((cat) => (
-            <div
-              key={cat}
-              style={{ display: "flex", alignItems: "center", gap: "6px" }}
-            >
-              <div
-                style={{
-                  width: "8px",
-                  height: "8px",
-                  borderRadius: "2px",
-                  backgroundColor: colors[cat],
-                  flexShrink: 0,
-                }}
-              />
-              {WATERFALL_CATEGORY_LABEL[cat]}
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
