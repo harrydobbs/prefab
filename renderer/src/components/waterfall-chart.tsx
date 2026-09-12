@@ -90,7 +90,8 @@ export function PrefabWaterfallChart({
   showYAxis = true,
   valueFormat = "auto",
   className,
-}: WaterfallChartWire & { className?: string }) {
+  id,
+}: WaterfallChartWire & { className?: string; id?: string }) {
   if (typeof data === "string") return null;
 
   const rows = buildWaterfallRows(data, dataKey, totalKey);
@@ -109,7 +110,7 @@ export function PrefabWaterfallChart({
   const valueFormatter = getValueFormatter(valueFormat);
 
   return (
-    <div className={className}>
+    <div id={id} className={className}>
       <ChartContainer config={config} style={{ height, aspectRatio: "auto" }}>
         <ComposedChart data={rows}>
           {showGrid && <CartesianGrid vertical={false} />}
@@ -141,11 +142,11 @@ export function PrefabWaterfallChart({
                       ? valueFormatter(delta)
                       : delta.toLocaleString();
                     return (
-                      <div className="flex w-full flex-1 items-center justify-between gap-3">
-                        <span className="text-muted-foreground">
+                      <div className="pf-waterfall-tooltip-row">
+                        <span className="pf-waterfall-tooltip-label">
                           {WATERFALL_CATEGORY_LABEL[row.__category]}
                         </span>
-                        <span className="font-mono font-medium tabular-nums text-foreground">
+                        <span className="pf-waterfall-tooltip-value">
                           {sign}
                           {display}
                         </span>
