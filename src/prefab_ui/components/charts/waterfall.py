@@ -7,7 +7,10 @@ from typing import Any, Literal
 from pydantic import Field
 
 from prefab_ui.components.base import Component
-from prefab_ui.components.charts._shared import ChartValueFormat
+from prefab_ui.components.charts._shared import (
+    ChartValueFormat,
+    _is_reactive_chart_data,
+)
 from prefab_ui.rx import RxStr
 
 
@@ -32,7 +35,7 @@ class WaterfallChart(Component):
         show_connectors: Show dashed bridge lines connecting each bar's ending height to the next bar.
         show_legend: Show legend.
         show_tooltip: Show tooltip on hover.
-        animate: Animate transitions when data changes.
+        animate: Animate transitions. Defaults to `False` for reactive data.
         show_grid: Show cartesian grid.
         show_y_axis: Show y-axis with tick labels.
         value_format: Pipe format for value-axis ticks and tooltip values.
@@ -121,3 +124,10 @@ class WaterfallChart(Component):
             "'currency', or 'percent:1'"
         ),
     )
+
+    def model_post_init(self, __context: Any) -> None:
+        if "animate" not in self.model_fields_set and _is_reactive_chart_data(
+            self.data
+        ):
+            self.animate = False
+        super().model_post_init(__context)
